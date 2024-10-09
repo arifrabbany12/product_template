@@ -42,50 +42,97 @@
     </div>
   </div>
 
-  <!-- COLUMN 3: Product Information Section (33%) -->
+  <!-- COLUMN 3: Dynamic Product Information Section (33%) -->
   <div class="product-info">
+    <!-- Dynamic Product Title -->
     <h1 class="product-title">{{ product.title }}</h1>
-    <h2 class="product-price">{{ product.selected_or_first_available_variant.price | money }}</h2>
+
+    <!-- Dynamic Product Price -->
+    <h2 class="product-price">
+      {{ product.selected_or_first_available_variant.price | money }}
+      {% if product.compare_at_price > product.price %}
+        <span class="compare-at-price">{{ product.compare_at_price | money }}</span>
+      {% endif %}
+    </h2>
+
+    <!-- Dynamic Product Description -->
     <p class="product-description">{{ product.description }}</p>
 
-    {% if product.variants.size > 1 %}
-      <div class="variants">
-        <h3 class="variant-title">Available Sizes</h3>
-        <select name="id" id="product-variants" class="variant-selector">
-          {% for variant in product.variants %}
-            <option
-              value="{{ variant.id }}"
-              data-price="{{ variant.price | money }}"
-              {% if variant == product.selected_or_first_available_variant %}
-                selected
-              {% endif %}
-            >
-              {{ variant.title }} - {{ variant.price | money }}
-            </option>
+    <!-- Quantity Selector -->
+    <label for="quantity" class="quantity-label">Quantity:</label>
+    <input type="number" id="quantity" name="quantity" value="1" min="1" class="quantity-input">
+
+    <!-- Dynamic Color Variants -->
+    {% if product.options_with_values.size > 0 %}
+      <div class="product-variants">
+        <h3 class="variant-title">Color</h3>
+        <select id="product-color" class="variant-selector">
+          {% for option in product.options_with_values %}
+            {% if option.name == 'Color' %}
+              {% for value in option.values %}
+                <option
+                  value="{{ value }}"
+                  {% if forloop.first %}
+                    selected
+                  {% endif %}
+                >
+                  {{ value }}
+                </option>
+              {% endfor %}
+            {% endif %}
           {% endfor %}
         </select>
       </div>
     {% endif %}
 
+    <!-- Dynamic Size Variants -->
+    {% if product.options_with_values.size > 0 %}
+      <div class="product-variants">
+        <h3 class="variant-title">Size</h3>
+        <select id="product-size" class="variant-selector">
+          {% for option in product.options_with_values %}
+            {% if option.name == 'Size' %}
+              {% for value in option.values %}
+                <option
+                  value="{{ value }}"
+                  {% if forloop.first %}
+                    selected
+                  {% endif %}
+                >
+                  {{ value }}
+                </option>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+
+    <!-- Add to Cart Form -->
     <form method="post" action="/cart/add" id="add-to-cart-form">
       <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" id="product-id-input">
+
+      <!-- Add to Cart Button -->
       <div class="product-buttons">
-        <button type="button" name="add" id="add-to-cart" class="add-to-cart-button">Add to Cart</button>
+        <button type="submit" class="add-to-cart-button">Add to Cart</button>
+        <button type="button" class="buy-now-button" id="buy-now">Buy Now</button>
       </div>
     </form>
+
+    <!-- Product Inventory Status -->
+    {% if product.selected_or_first_available_variant.inventory_management == 'shopify' %}
+      <p class="product-inventory">
+        {% if product.selected_or_first_available_variant.inventory_quantity > 0 %}
+          {{ product.selected_or_first_available_variant.inventory_quantity }} in stock
+        {% else %}
+          Out of stock
+        {% endif %}
+      </p>
+    {% endif %}
   </div>
 </section>
 
-<!-- Popup Modal -->
-<div id="cart-popup" class="cart-popup">
-  <div class="cart-popup-content">
-    <span class="close">&times;</span>
-    <h3>Item added to cart!</h3>
-    <p>Your item has been successfully added to the cart.</p>
-    <a href="/cart" class="view-cart-btn">View Cart</a>
-  </div>
-</div>
-
+<!-- Script for Scroll-to-Switch Image Effect and Buy Now Button -->
 <script>
 // Select all images and thumbnails
 const images = document.querySelectorAll('.image');
@@ -153,208 +200,199 @@ thumbnails.forEach((thumbnail, index) => {
 
 // Initialize: Set the first thumbnail as active and update progress bar
 updateMainImage(currentImage, 'down');
+
+// Buy Now button functionality
+document.getElementById('buy-now').addEventListener('click', function() {
+  const productId = document.getElementById('product-id-input').value;
+  const quantity = document.getElementById('quantity').value;
+
+  // Redirect to checkout page with product and quantity pre-filled
+  window.location.href = `/checkout?updates[${productId}]=${quantity}`;
+});
 </script>
 
+<!-- Styles for Product Page -->
 <style>
-    /* General Layout */
-    #MainProduct {
-      display: flex;
-      justify-content: space-between;
-      max-width: 1200px;
-      margin: 0 auto;
-      gap: 20px;
-      overflow: hidden;
-      height: 100vh;
-    }
+  /* General Layout */
+  #MainProduct {
+    display: flex;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 20px;
+    overflow: hidden;
+    height: 100vh;
+  }
 
-    .composition-care, .product-info {
-      flex-basis: 25%;
-      color: #c7c7c7;
-    }
+  .composition-care, .product-info {
+    flex-basis: 25%;
+    color: #c7c7c7;
+  }
 
-    /* Column 1: Composition & Care */
-    .section-title {
-      font-size: 24px;
-      color: white;
-      margin-bottom: 10px;
-    }
+  /* Column 1: Composition & Care */
+  .section-title {
+    font-size: 24px;
+    color: white;
+    margin-bottom: 10px;
+  }
 
-    .section-text {
-      font-size: 16px;
-      line-height: 1.6;
-    }
+  .section-text {
+    font-size: 16px;
+    line-height: 1.6;
+  }
 
-    .view-more {
-      color: #ff4500;
-      font-size: 16px;
-    }
+  .view-more {
+    color: #ff4500;
+    font-size: 16px;
+  }
 
-    /* Column 2: Product Image Gallery */
-    .product-images {
-      display: flex;
-      align-items: flex-start;
-      gap: 20px;
-      position: relative;
-      width: 50%;
-      overflow:hidden;
-    }
+  /* Column 2: Product Image Gallery */
+  .product-images {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    position: relative;
+    width: 50%;
+    overflow:hidden;
+  }
 
-    .image-container {
-      width: 100%;
-      position: relative;
-      background-color: #000;
-    }
+  .image-container {
+    width: 100%;
+    position: relative;
+    background-color: #000;
+  }
 
-    .image {
-      width: 100%;
-      height: auto;
-      position: absolute;
-      top: 0;
-      left: 0;
-      opacity: 0;
-      transform: translateY(100%);
-      transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
-    }
+  .image {
+    width: 100%;
+    height: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+  }
 
-    .image.active {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .image.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
-    .thumbnail-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+  .thumbnail-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-    .thumbnail {
+  .thumbnail {
     cursor: pointer;
     object-fit: cover;
     width: 40px;
     height: 60px;
     border-radius: 5px;
     opacity: 0.6; /* Default opacity for inactive thumbnails */
-          border: 1px solid transparent;
+    border: 1px solid transparent;
     transition: opacity 0.3s ease-in-out, border-color 0.3s ease-in-out;
   }
 
-    .progress-bar-container {
-      position: absolute;
-      top: 0;
-      width: 1px;
-      height: 780px;
-      background-color: #ddd;
-      border-radius: 3px;
-      right: 48px;
-    }
+  .progress-bar-container {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 780px;
+    background-color: #ddd;
+    border-radius: 3px;
+    right: 48px;
+  }
 
-    .progress-bar {
-      width: 100%;
-      height: 0;
-      background-color: #121212;
-      transition: height 0.5s ease-in-out;
-      display: inherit !important;
-    }
+  .progress-bar {
+    width: 100%;
+    height: 0;
+    background-color: #121212;
+    transition: height 0.5s ease-in-out;
+    display: inherit !important;
+  }
 
-    /* Column 3: Product Information */
-    .product-title {
-      font-size: 24px;
-      color: black;
-      margin-bottom: 10px;
-    }
+  /* Column 3: Product Information */
+  .product-title {
+    font-size: 24px;
+    color: black;
+    margin-bottom: 10px;
+  }
 
-    .product-price {
-      font-size: 22px;
-      color: black;
-      margin-bottom: 15px;
-    }
+  .product-price {
+    font-size: 22px;
+    color: black;
+    margin-bottom: 15px;
+  }
 
-    .product-description {
-      font-size: 16px;
-      color: #c7c7c7;
-      margin-bottom: 20px;
-    }
+  .compare-at-price {
+    text-decoration: line-through;
+    color: red;
+    margin-left: 10px;
+  }
 
-    /* Variants Section */
-    .variant-title {
-      font-size: 16px;
-      color: white;
-      margin-bottom: 5px;
-    }
+  .product-description {
+    font-size: 16px;
+    color: #c7c7c7;
+    margin-bottom: 20px;
+  }
 
-    .variant-selector {
-      padding: 10px;
-      background-color: #333;
-      color: white;
-      border: 1px solid #666;
-      cursor: pointer;
-      width: 100%;
-    }
+  /* Variants Section */
+  .variant-title {
+    font-size: 16px;
+    color: white;
+    margin-bottom: 5px;
+  }
 
-    .variant-selector option {
-      color: black;
-    }
+  .variant-selector {
+    padding: 10px;
+    background-color: #333;
+    color: white;
+    border: 1px solid #666;
+    cursor: pointer;
+    width: 100%;
+    margin-bottom: 15px;
+  }
 
-    /* Add to Cart Button */
-    .add-to-cart-button {
-      padding: 15px 30px;
-      background-color: #ff4500;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      width: 100%;
-    }
+  .variant-selector option {
+    color: black;
+  }
 
-    .add-to-cart-button:hover {
-      background-color: #e63e00;
-    }
+  /* Quantity Section */
+  .quantity-label {
+    font-size: 16px;
+    color: white;
+    margin-bottom: 5px;
+  }
 
-    /* Popup Modal */
-    .cart-popup {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-    }
+  .quantity-input {
+    padding: 10px;
+    width: 100%;
+    margin-bottom: 20px;
+    background-color: #333;
+    color: white;
+    border: 1px solid #666;
+  }
 
-    .cart-popup-content {
-      background-color: white;
-      margin: 15% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      width: 300px;
-      text-align: center;
-    }
+  /* Add to Cart and Buy Now Buttons */
+  .product-buttons {
+    display: flex;
+    gap: 10px;
+  }
 
-    .cart-popup-content .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-    }
+  .add-to-cart-button, .buy-now-button {
+    padding: 15px 30px;
+    background-color: #ff4500;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    flex: 1;
+    text-align: center;
+  }
 
-    .cart-popup-content .close:hover,
-    .cart-popup-content .close:focus {
-      color: black;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .view-cart-btn {
-      display: inline-block;
-      background-color: #ff4500;
-      color: white;
-      padding: 10px 20px;
-      text-decoration: none;
-      margin-top: 20px;
-    }
-
-    .view-cart-btn:hover {
-      background-color: #e63e00;
-    }
+  .add-to-cart-button:hover, .buy-now-button:hover {
+    background-color: #e63e00;
+  }
 </style>
